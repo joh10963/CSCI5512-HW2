@@ -47,7 +47,7 @@ def create_factor_graph(G):
         Return a factor graph given the Bayes Net G
         
         Inputs:
-            G: np.ndarray, an adjacency matrix describing the directed Bayes Net 
+            G: np.ndarray, an adjacency matrix describing the directed Bayes Net
                 G[i, j] = 1 if there exists and edge from node i to j
                         = 0 otherwise
             
@@ -57,7 +57,29 @@ def create_factor_graph(G):
                         = -1 if there exists an edge from node i to j and node j is a factor
                         = 0 otherwise
     '''
-    pass
+    # start off with a factor graph the same size as G - add factor nodes as we go
+    F = np.zeros(shape=G.shape)
+    
+    # Iterate through each node in G
+    for i in range(G.shape[0]):
+        # add a factor to the graph
+        F = np.concatenate([F, np.zeros(shape=(F.shape[0],1))], axis=1) #add a column of zeros
+        F = np.concatenate([F, np.zeros(shape=(1,F.shape[1]))], axis=0) #add a row of zeros
+        j = F.shape[0]-1 #the index of the factor we just added
+        if np.argwhere(get_parents(G, i)).size == 0: # node i does not have any parents so just connect a factor
+            # Connect the new factor to the node
+            F[i, j] = -1 # j is the factor so -1
+            F[j, i] = 1 # i is the variable so 1
+        else: # node i has parents and we need to place the factor between node i and its parents
+            for p in np.argwhere(get_parents(G, i)):
+                # connect the parent to the factor
+                F[p, j] = -1 # j is the factor so -1
+                F[j, p] = 1 # p is the variable so 1
+            # Connect the factor to node i
+            F[i, j] = -1 # j is the factor so -1
+            F[j, i] = 1 # i is the variable so 1
+    
+    return F
 
 def not_sum(n, fCPT, M):
     '''
@@ -169,6 +191,7 @@ def belief_propagation(G, CPT):
             P: np.ndarray, marginal distributions for each variable in G
     '''
     # Create factor graph F
+    F = create_factor_graph(G)
     # M = pass_messages(F, CPT)
     # P = get_marginal_distributions(F, M)
     # return P
@@ -184,8 +207,40 @@ if __name__ == '__main__':
                   [0, 0, 0, 1, 1],
                   [0, 0, 0, 0, 0],
                   [0, 0, 0, 0, 0]])
-                  
-    CPT = [None, None, None, None, None] #these need to be np.ndarrays - not sure how to define quite yet
+    
+    # Define the CPT for each variable in G
+    # P(b)
+    # Pb = np.array([-b, b])
+    Pb = np.array([1.0-0.001, 0.001])
+
+    # P(E)
+    # Pe = np.array([-e, e])
+    Pe = np.array([1.0-0.002, 0.002])
+
+    # P(A|B,E) P[B, E, A]
+    #Pa = np.array([[(-b, -e, -a), (-b, -e, a)], [(-b, e, -a), (-b, e, a)]],
+    #               [[(b, -e, -a), (b, -e, a)], [(b, e, -a), (b, e, a)]])
+    Pa = np.array([[[1.0-0.001, 0.001], [1.0-0.29, 0.29]],
+                   [[1.0-0.94, 0.94], [1.0-0.95, 0.95]]])
+
+    # P(J|A) P[A, J]
+    #Pj = np.array([(-a, -j), (-a, j)],
+    #              [(a, -j), (a, j)])
+    Pj = np.array([[1.0-0.05, 0.05],
+                   [1.0-0.90, 0.90]])
+    
+    # P(M|A) P[A, M]
+    #Pm = np.array([(-a, -m), (-a, m)],
+    #              [(a, -m), (a, m)])
+    Pm = np.array([[1.0-0.01, 0.01],
+                   [1.0-0.70, 0.70]])
+    
+    CPT = [Pb, Pe, Pa, Pj, Pm]
+
+    marginals = belief_propagation(G, CPT)
+
+
+
 
 
 
