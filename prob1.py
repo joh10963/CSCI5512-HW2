@@ -113,7 +113,6 @@ def not_sum(rep, ex, fCPT, m=None):
         output = fCPT
 
     # find the the index of the left-out variable (in terms of the indexing of fCPT)
-    #import pdb; pdb.set_trace()
     n = np.sum(rep[0:np.argwhere(ex)[0][0]])
 
     # sum over all the dimensions besides n
@@ -264,8 +263,8 @@ def get_node_order(F):
     # backward pass
     length = len(output)-2 #start at the second to last item in output
     for i in range(length, -1, -1):
-        send_nodes = np.unique(output[i].values())
-        receiving = [[key for key, value in output[i].items() if r in value] for r in send_nodes]
+        send_nodes = np.unique([x for x in output[i].values()]) #np.unique(output[i].values())
+        receiving = [[key for (key, value) in output[i].items() if r in value] for r in send_nodes]
         output.append({send:receive for (send, receive) in [(send_nodes[i], receiving[i]) for i in range(len(send_nodes))]})
 
     return output
@@ -325,7 +324,6 @@ def get_marginal_distributions(G, F, M):
         # get the incoming messages to the var node
         messages = get_incoming_messages(var, M)
         messages = [messages[i] for i in range(len(messages)) if (messages[i] is not None)]
-
         # multiply all the incoming messages together
         message = messages[0]
         for i in range(1, len(messages)):
@@ -400,7 +398,7 @@ if __name__ == '__main__':
 
     P = belief_propagation(G, CPT)
     for i in range(len(variable_names)):
-        print 'Marginal Distribution ([false, true]) for variable %s is  %s' %(variable_names[i], P[i])
+        print('Marginal Distribution ([false, true]) for variable {} is  {}'.format(variable_names[i], P[i]))
 
 
 #print not_sum(np.array([1, 0, 0, 0, 0]), np.array([1, 0, 0, 0, 0]), Pb, [np.array([0.1, 0.2])])
