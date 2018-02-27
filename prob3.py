@@ -28,7 +28,24 @@ def get_parents(G, i):
     return G[:, i]
 
 def get_prob(G, Y, vals, CPT):
-    #pdb.set_trace()
+    '''
+       Return the probability from CPT given vals as evidence and query variable Y
+       
+       Inputs:
+            G: np.ndarray, an adjacency matrix describing the directed Bayes Net
+                G[i, j] = 1 if there exists and edge from node i to j
+                        = 0 otherwise
+            Y: np.array, one-hot coding for query variable
+                Y[i] = 1 if variable i is query variable
+                     = 0 otherwise
+            vals: np.array, values of the evidence
+                vals[i] = val if variable i is an evidence variable w/ value
+                        = -1 if variable i is not an evidence variable
+            CPT: np.ndarray, conditional probability table
+                where CPT[Y, vals[0], vals[1], ...] for valid evidence variables vals
+        Outputs:
+            float
+    '''
     parents = get_parents(G, np.argwhere(Y)[0,0])
     parent_evidence = [vals[i] for i in range(vals.size) if parents[i] == 1]
     return_value = CPT[vals[np.argwhere(Y)[0,0]]] # evidence for Y
@@ -37,22 +54,62 @@ def get_prob(G, Y, vals, CPT):
     return return_value
 
 def enumeration_ask(X, vals, CPT, G):
+    '''
+        Return the query probability P(X|vals) using inference by enumeration
+        
+        Inputs:
+            G: np.ndarray, an adjacency matrix describing the directed Bayes Net
+                G[i, j] = 1 if there exists and edge from node i to j
+                        = 0 otherwise
+            X: np.array, one-hot coding for query variable
+                X[i] = 1 if variable i is query variable
+                     = 0 otherwise
+            vals: np.array, values of the evidence
+                vals[i] = val if variable i is an evidence variable w/ value
+                        = -1 if variable i is not an evidence variable
+            CPT: list, conditional probability tables are np.ndarray
+                where CPT[i][Y, vals[0], vals[1], ...] for valid evidence variables vals
+        Outputs:
+            np.array of probabilities P(X|vals)
+    '''
+    # start out with blank output
     Q = np.zeros(shape=[CPT[np.argwhere(X)[0,0]].shape[0]])
+    # get all the variables in the Bayes net in one-hot coding
     vars = np.identity(G.shape[0])
+    # iterate through all the values of X
     for x in range(Q.size):
-        vals[np.argwhere(X)[0,0]] = x
-        Q[x] = enumerate_all(vars, vals, CPT, G)
+        vals[np.argwhere(X)[0,0]] = x # add x as evidence
+        Q[x] = enumerate_all(vars, vals, CPT, G) #do the inference by enumeration
     
+    # return the normalized probability distribution
     return Q/np.sum(Q)
 
 def enumerate_all(vars, vals, CPT, G):
+    '''
+        Return the query probability P(X|vals) using inference by enumeration
+        
+        Inputs:
+            G: np.ndarray, an adjacency matrix describing the directed Bayes Net
+                G[i, j] = 1 if there exists and edge from node i to j
+                        = 0 otherwise
+            vars: np.ndarray, one-hot coding for query variables
+                vars[i, j] = 1 if the ith variable in vars is the jth variable in the Bayes net
+                           = 0 otherwise
+            vals: np.array, values of the evidence
+                vals[i] = val if variable i is an evidence variable w/ value
+                        = -1 if variable i is not an evidence variable
+            CPT: list, conditional probability tables are np.ndarray
+                where CPT[i][Y, vals[0], vals[1], ...] for valid evidence variables vals
+                
+        Outputs:
+            float
+    '''
     if len(vars) == 0:
         return 1.0
     Y = vars[0]
     # if Y is an evidence variable then we don't have to sum over the variables
     if np.any(np.argwhere(Y) == np.argwhere(vals >= 0)):
         prob = get_prob(G, Y, vals, CPT[np.argwhere(Y)[0,0]])
-        #pdb.set_trace()
         part = prob * enumerate_all(vars[1:], vals, CPT, G)
     else: # Y is not an evidence variable so sum over the variables
         part = []
@@ -61,7 +118,6 @@ def enumerate_all(vars, vals, CPT, G):
             vals_prime = np.copy(vals)
             vals_prime[np.argwhere(Y)[0,0]] = y
             prob = get_prob(G, Y, vals_prime, CPT[np.argwhere(Y)[0,0]])
-            #pdb.set_trace()
             part.append(prob * enumerate_all(vars[1:], vals_prime, CPT, G))
         part = sum(part)
     return part
@@ -69,9 +125,15 @@ def enumerate_all(vars, vals, CPT, G):
 ###################################################################################
 # Part c - inference by enumeration using AIMA
 ###################################################################################
-def create_aima_net(chief_signal_inducing_crime_p):
+def create_aima_net():
+    '''
+        Return a Bayes net using AIMA library
+        
+        Outputs:
+            BayesNet object
+    '''
     # Create the Bayes Net
-    net = pb.BayesNet([('S', '', chief_signal_inducing_crime_p),
+    net = pb.BayesNet([('S', '', 0.4),
                        ('V', 'S', {(True):0.9, (False):0.2}),
                        ('C', 'S', {(True):0.98, (False):0.02}),
                        ('A', 'C', {(True):0.999, (False):0.0})])
@@ -120,8 +182,8 @@ if __name__ == '__main__':
   
     CPT = [Ps, Pv, Pc, Pa]
 
-    X = np.array([1, 0, 0, 0])
-    vals = np.array([-1, -1, -1, 0])
+    X = np.array([1, 0, 0, 0]) #query
+    vals = np.array([-1, -1, -1, 0]) #evidence
     P = enumeration_ask(X, vals, CPT, G)
     print('------------ inference by enumeration from scratch ---------------')
     print('P(S|A=T) = %s' % P)
@@ -130,8 +192,8 @@ if __name__ == '__main__':
 ##############################################################
 # Part c
 ##############################################################
-    chief_signal_inducing_crime_p = np.sum(P[3:]) # P(S>=4|A=T)
-    net = create_aima_net(chief_signal_inducing_crime_p)
+    #chief_signal_inducing_crime_p = np.sum(P[3:]) # P(S>=4|A=T)
+    net = create_aima_net()
     
     # find P(S>=4|A=T) ----> P(S=T|A=T)
     X = 'S' #query variable
