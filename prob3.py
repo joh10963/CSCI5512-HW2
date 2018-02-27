@@ -5,8 +5,10 @@
 import numpy as np
 import pdb
 
+from aima import probability as pb
+
 ################################################
-# Part a - inference by enumeration from scratch
+# Part b - inference by enumeration from scratch
 ################################################
 def get_parents(G, i):
     '''
@@ -64,10 +66,21 @@ def enumerate_all(vars, vals, CPT, G):
         part = sum(part)
     return part
 
+###################################################################################
+# Part c - inference by enumeration using AIMA
+###################################################################################
+def create_aima_net(chief_signal_inducing_crime_p):
+    # Create the Bayes Net
+    net = pb.BayesNet([('S', '', chief_signal_inducing_crime_p),
+                       ('V', 'S', {(True):0.9, (False):0.2}),
+                       ('C', 'S', {(True):0.98, (False):0.02}),
+                       ('A', 'C', {(True):0.999, (False):0.0})])
+    return net
+
 
 if __name__ == '__main__':
 ####################################################################################
-# Part a
+# Part b
 ####################################################################################
     # Define the Bayes Net G
     variable_names = ['S', 'V', 'C', 'A']
@@ -109,7 +122,35 @@ if __name__ == '__main__':
 
     X = np.array([1, 0, 0, 0])
     vals = np.array([-1, -1, -1, 0])
-    print('P(S=5|A=T) = %s' % enumeration_ask(X, vals, CPT, G)[4])
+    P = enumeration_ask(X, vals, CPT, G)
+    print('------------ inference by enumeration from scratch ---------------')
+    print('P(S|A=T) = %s' % P)
+    print('P(S=5|A=T) = %s' % P[4])
+
+##############################################################
+# Part c
+##############################################################
+    chief_signal_inducing_crime_p = np.sum(P[3:]) # P(S>=4|A=T)
+    net = create_aima_net(chief_signal_inducing_crime_p)
+    
+    # find P(S>=4|A=T) ----> P(S=T|A=T)
+    X = 'S' #query variable
+    e = {'A':True} # evidence
+    P = pb.enumeration_ask(X, e, net) #P(S|A=T)
+    
+    print('------------ inference by enumeration from AIMA (binary) ---------------')
+    print('P(S|A=T) %s' % P.show_approx())
+    print('P(S>=4|A=T) %s' % P[True])
+
+##############################################################
+# Part d
+##############################################################
+    # can use the same net and variables from part c
+    P2 = pb.elimination_ask(X, e, net) #P(S|A=T)
+
+    print('------------ inference by variable elimination from AIMA (binary) ---------------')
+    print('P(S|A=T) %s' % P2.show_approx())
+    print('P(S>=4|A=T) %s' % P2[True])
 
 
 ## Define the Bayes Net G
