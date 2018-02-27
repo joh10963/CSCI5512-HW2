@@ -177,7 +177,24 @@ def find_ends(F):
 
 def get_initial_message_matrix(F, R, CPT):
     '''
-        Return the initialization of the message adjacency matrix
+        Return the initialization of the adjacency matrix containing all the passed messages
+        
+        Inputs:
+            F: np.ndarray, an adjacency matrix describing the factor graph
+                F[i, j] = 1 if there exists an edge from node i to j and node j is a variable
+                        = -1 if there exists an edge from node i to j and node j is a factor
+                        = 0 otherwise
+            R: np.ndarray, one hot coding for the variables in each factor
+                R[i, j] = 1 if factor i uses variable j
+                        = 0 otherwise
+            CPT: np.ndarray, CPT for all factors
+         
+        Outputs:
+            M: np.ndarray, an adjacency matrix describing the message graph
+                FOR ONLY MESSAGES SENT FROM END NODES TO CHILDREN [B/C INITIALIZATION]
+                M[i, j] = np.ndarray if there is a message from node i to j
+                        = None otherwise
+
     '''
     ends = find_ends(F) #find the nodes that are ends - where our messages start
     M = np.full(F.shape, np.nan, dtype=object) #create an array of size F filled with np.nan
@@ -236,8 +253,20 @@ def calculate_message(F, R, M, CPT, sending_node, receiving_node):
     return message
 
 def get_node_order(F):
-    output = []
+    '''
+        Return the order of the nodes that the messages are passed
         
+        Inputs:
+            F: np.ndarray, an adjacency matrix describing the factor graph
+                F[i, j] = 1 if there exists an edge from node i to j and node j is a variable
+                        = -1 if there exists an edge from node i to j and node j is a factor
+                        = 0 otherwise
+        Outputs:
+            list of dictionaries where each dictionary represents a step in the message passing
+            {sending_node1:[receiving_nodes1], sending_node2:[receiving_nodes2], ...}
+    '''
+    output = []
+    
     # start with the end nodes
     send_nodes = np.argwhere(find_ends(F))[:,0]
     visited = send_nodes
