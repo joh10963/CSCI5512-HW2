@@ -59,7 +59,7 @@ def create_factor_graph(G):
             R: np.ndarray, one hot coding for the variables in each factor
                 R[i, j] = 1 if factor i uses variable j
                         = 0 otherwise
-            CPT: list
+            CPT: list of the factors (the conditional probability distributions multiplied together)
     '''
     # start off with a factor graph the same size as G - add factor nodes as we go
     F = np.zeros(shape=G.shape)
