@@ -8,7 +8,9 @@ prob1.py
 
 prob2.py
 -----------------------------------------------
-    
+    Needs numpy to run
+
+    To run, call: python prob2.py
 
 prob3.py
 -----------------------------------------------
